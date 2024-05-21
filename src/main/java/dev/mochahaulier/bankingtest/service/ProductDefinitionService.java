@@ -6,6 +6,7 @@ import dev.mochahaulier.bankingtest.model.PayRateUnit;
 import dev.mochahaulier.bankingtest.model.Product;
 import dev.mochahaulier.bankingtest.model.ProductDefinition;
 import dev.mochahaulier.bankingtest.model.ProductType;
+import dev.mochahaulier.bankingtest.model.RateType;
 import dev.mochahaulier.bankingtest.repository.ProductDefinitionRepository;
 import dev.mochahaulier.bankingtest.repository.ProductRepository;
 
@@ -82,7 +83,7 @@ public class ProductDefinitionService {
         // TODO: check if changed from fixed to percentage...so actually need to test
         // both...
         for (Product product : products) {
-            if (definition.getRateType().equals("fixed")) {
+            if (definition.getRateType() == RateType.FIXED) {
                 BigDecimal newRate = definition.getRate().add(product.getRate());
                 // new rate now smaller than zero.
                 if (newRate.compareTo(BigDecimal.ZERO) < 0) {

@@ -41,16 +41,6 @@ public class ClientProduct {
         return product.getRate();
     }
 
-    public BigDecimal getCustomRate() {
-        ProductDefinition productDefinition = product.getProductDefinition();
-        if (productDefinition.getRateType().equals("fixed")) {
-            return productDefinition.getRate().add(product.getRate());
-        } else if (productDefinition.getRateType().equals("percentage")) {
-            return productDefinition.getRate().add(productDefinition.getRate().multiply(product.getRate()));
-        }
-        return BigDecimal.ZERO;
-    }
-
     // Return the number of due dates since
     // Might be good to save in the DB directly, but then would need to update with
     // changes in PayRate.

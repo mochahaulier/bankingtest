@@ -2,6 +2,7 @@ package dev.mochahaulier.bankingtest.service;
 
 import dev.mochahaulier.bankingtest.model.Product;
 import dev.mochahaulier.bankingtest.model.ProductDefinition;
+import dev.mochahaulier.bankingtest.model.RateType;
 import dev.mochahaulier.bankingtest.repository.ProductDefinitionRepository;
 import dev.mochahaulier.bankingtest.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,7 +66,7 @@ public class ProductService {
     private void validateCustomRate(ProductDefinition productDefinition, BigDecimal customRate) {
         // Maybe productDefinition.getType() == ProductType.ACCOUNT, if always fixed for
         // accounts, but usede solution more general I supppose...
-        if (productDefinition.getRateType().equals("fixed")) {
+        if (productDefinition.getRateType() == RateType.FIXED) {
             if (customRate.compareTo(BigDecimal.valueOf(-250)) < 0
                     || customRate.compareTo(BigDecimal.valueOf(250)) > 0) {
                 throw new IllegalArgumentException("Custom rate out of allowed range +-250");
@@ -76,7 +77,7 @@ public class ProductService {
             if (newRate.compareTo(BigDecimal.ZERO) < 0) {
                 throw new IllegalArgumentException("Final rate can't be negative: " + newRate + "(" + customRate + ")");
             }
-        } else if (productDefinition.getRateType().equals("percentage")) {
+        } else if (productDefinition.getRateType() == RateType.PERCENTAGE) {
             if (customRate.compareTo(BigDecimal.valueOf(-0.2)) < 0
                     || customRate.compareTo(BigDecimal.valueOf(0.2)) > 0) {
                 throw new IllegalArgumentException("Custom rate out of allowed range +-0.2");

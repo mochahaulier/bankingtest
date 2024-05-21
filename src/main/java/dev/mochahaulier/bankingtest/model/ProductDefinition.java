@@ -42,8 +42,8 @@ public class ProductDefinition {
         return this.payRate.getValue();
     }
 
-    public String getRateType() {
+    public RateType getRateType() {
         // If rate bigger than 1 set as fixed, otherwise use percentage, big assumption
-        return this.rate.compareTo(BigDecimal.ONE) == 1 ? "fixed" : "percentage";
+        return this.rate.compareTo(BigDecimal.ONE) == 1 ? RateType.FIXED : RateType.PERCENTAGE;
     }
 }

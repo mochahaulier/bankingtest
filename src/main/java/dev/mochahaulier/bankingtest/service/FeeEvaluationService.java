@@ -3,6 +3,7 @@ package dev.mochahaulier.bankingtest.service;
 import dev.mochahaulier.bankingtest.model.ClientProduct;
 import dev.mochahaulier.bankingtest.model.ProductDefinition;
 import dev.mochahaulier.bankingtest.model.ProductType;
+import dev.mochahaulier.bankingtest.model.RateType;
 import dev.mochahaulier.bankingtest.repository.ClientProductRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,12 +47,12 @@ public class FeeEvaluationService {
         ProductDefinition productDefinition = clientProduct.getProductDefinition();
 
         // for RateType fixed the fee is just the rate
-        if (productDefinition.getRateType().equals("fixed")) {
+        if (productDefinition.getRateType() == RateType.FIXED) {
             return productDefinition.getRate().add(clientProduct.getRate());
         }
 
         // for percentage fixed the fee is just the rate
-        if (productDefinition.getRateType().equals("percentage")) {
+        if (productDefinition.getRateType() == RateType.PERCENTAGE) {
             // The main rate from the definition
             BigDecimal ratePD = productDefinition.getRate();
             // The custom clientproduct rate.

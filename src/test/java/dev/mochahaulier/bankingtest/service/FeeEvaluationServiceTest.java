@@ -37,10 +37,13 @@ public class FeeEvaluationServiceTest {
 
     private Client client;
     private ProductDefinition accountProductDefinition;
+    private ProductDefinition account2ProductDefinition;
     private ProductDefinition loanProductDefinition;
     private Product accountProduct;
+    private Product account2Product;
     private Product loanProduct;
     private ClientProduct clientAccountProduct;
+    private ClientProduct clientAccount2Product;
     private ClientProduct clientLoanProduct;
 
     @BeforeEach
@@ -56,19 +59,32 @@ public class FeeEvaluationServiceTest {
         payRate.setValue(14);
         accountProductDefinition.setPayRate(payRate);
 
+        account2ProductDefinition = new ProductDefinition();
+        account2ProductDefinition.setProductKey("PA004B");
+        account2ProductDefinition.setType(ProductType.ACCOUNT);
+        account2ProductDefinition.setRate(new BigDecimal("0.5"));
+        PayRate payRate2 = new PayRate();
+        payRate2.setUnit(PayRateUnit.DAY);
+        payRate2.setValue(14);
+        account2ProductDefinition.setPayRate(payRate2);
+
         loanProductDefinition = new ProductDefinition();
         loanProductDefinition.setProductKey("CL48S5");
         loanProductDefinition.setType(ProductType.LOAN);
         loanProductDefinition.setRate(new BigDecimal("0.5"));
-        PayRate payRate2 = new PayRate();
-        payRate2.setUnit(PayRateUnit.MONTH);
-        payRate2.setValue(3);
-        loanProductDefinition.setPayRate(payRate2);
+        PayRate payRateL = new PayRate();
+        payRateL.setUnit(PayRateUnit.MONTH);
+        payRateL.setValue(3);
+        loanProductDefinition.setPayRate(payRateL);
 
         // Create Products
         accountProduct = new Product();
         accountProduct.setProductDefinition(accountProductDefinition);
         accountProduct.setRate(new BigDecimal("200"));
+
+        account2Product = new Product();
+        account2Product.setProductDefinition(account2ProductDefinition);
+        account2Product.setRate(new BigDecimal("-0.1"));
 
         loanProduct = new Product();
         loanProduct.setProductDefinition(loanProductDefinition);
@@ -87,6 +103,13 @@ public class FeeEvaluationServiceTest {
         clientAccountProduct.setLastChargeDate(LocalDate.now().minusDays(15));
         clientAccountProduct.setStartDate(LocalDate.now().minusMonths(1));
 
+        clientAccount2Product = new ClientProduct();
+        clientAccount2Product.setClient(client);
+        clientAccount2Product.setProduct(account2Product);
+        clientAccount2Product.setBalance(new BigDecimal("1000"));
+        clientAccount2Product.setLastChargeDate(LocalDate.now().minusDays(15));
+        clientAccount2Product.setStartDate(LocalDate.now().minusMonths(1));
+
         clientLoanProduct = new ClientProduct();
         clientLoanProduct.setClient(client);
         clientLoanProduct.setProduct(loanProduct);
@@ -96,7 +119,8 @@ public class FeeEvaluationServiceTest {
         clientLoanProduct.setEndDate(LocalDate.now().plusMonths(9));
         clientLoanProduct.setLastChargeDate(LocalDate.now().minusMonths(5));
 
-        List<ClientProduct> clientProducts = Arrays.asList(clientAccountProduct, clientLoanProduct);
+        List<ClientProduct> clientProducts = Arrays.asList(clientAccountProduct, clientAccount2Product,
+                clientLoanProduct);
 
         // Mocking repository methods
         when(clientProductRepository.findAll()).thenReturn(clientProducts);
@@ -111,10 +135,12 @@ public class FeeEvaluationServiceTest {
         feeEvaluationService.evaluateFees();
 
         // Assertions to verify fee deduction
-        // 10000 (balance) - 350 (account fee) - 2250 (loan fee)
-        BigDecimal expectedAccountBalance = new BigDecimal("7400");
+        // 10000 (balance) - 350 (account fee) - 2250 (loan fee) - 450 (account2 fee)
+        BigDecimal expectedAccountBalance = new BigDecimal("6950");
 
         // Verify the deduction from the account product
         assert clientAccountProduct.getBalance().compareTo(expectedAccountBalance) == 0;
+        // Verify no deduction from the second account product
+        assert clientAccount2Product.getBalance().compareTo(new BigDecimal("1000")) == 0;
     }
 }
