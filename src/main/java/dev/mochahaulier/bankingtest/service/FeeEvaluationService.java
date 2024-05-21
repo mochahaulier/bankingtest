@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -74,15 +75,22 @@ public class FeeEvaluationService {
 
     private void deductFee(ClientProduct clientProduct, BigDecimal fee) {
         // Find the first account of the client to deduct the fee
-        // Not the best solution, does he need to have account...
+        // Not the best solution, does he need to have account, etc...
+        // Get all clientproducts that are accounts
         List<ClientProduct> clientAccounts = clientProductRepository
                 .findByClientAndProduct_ProductDefinition_Type(clientProduct.getClient(), ProductType.ACCOUNT);
-        if (!clientAccounts.isEmpty()) {
-            ClientProduct account = clientAccounts.get(0);
-            account.setBalance(account.getBalance().subtract(fee));
-            clientProductRepository.save(account);
-        } else {
+
+        if (clientAccounts.isEmpty()) {
             throw new IllegalStateException("No account found for client " + clientProduct.getClient().getId());
         }
+
+        // Select account with smallest ID
+        ClientProduct account = clientAccounts.stream()
+                .min(Comparator.comparing(ClientProduct::getId))
+                .orElseThrow(() -> new RuntimeException("No account found."));
+
+        // Deduct the fee from first account
+        account.setBalance(account.getBalance().subtract(fee));
+        clientProductRepository.save(account);
     }
 }
