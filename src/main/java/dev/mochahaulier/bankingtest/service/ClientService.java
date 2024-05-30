@@ -2,17 +2,18 @@ package dev.mochahaulier.bankingtest.service;
 
 import dev.mochahaulier.bankingtest.model.Client;
 import dev.mochahaulier.bankingtest.repository.ClientRepository;
+import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ClientService {
-    @Autowired
-    private ClientRepository clientRepository;
+
+    private final ClientRepository clientRepository;
 
     public List<Client> getAllClients() {
         return clientRepository.findAll();

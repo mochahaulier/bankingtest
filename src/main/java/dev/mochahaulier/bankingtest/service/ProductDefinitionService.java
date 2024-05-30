@@ -9,8 +9,8 @@ import dev.mochahaulier.bankingtest.model.ProductType;
 import dev.mochahaulier.bankingtest.model.RateType;
 import dev.mochahaulier.bankingtest.repository.ProductDefinitionRepository;
 import dev.mochahaulier.bankingtest.repository.ProductRepository;
+import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,13 +18,12 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ProductDefinitionService {
 
-    @Autowired
-    private ProductDefinitionRepository productDefinitionRepository;
+    private final ProductDefinitionRepository productDefinitionRepository;
 
-    @Autowired
-    private ProductRepository productRepository;
+    private final ProductRepository productRepository;
 
     @Transactional
     public void processProductDefinitions(List<ProductDefinitionRequest.DefinitionRequest> requests) {

@@ -2,7 +2,8 @@ package dev.mochahaulier.bankingtest.controller;
 
 import dev.mochahaulier.bankingtest.model.Client;
 import dev.mochahaulier.bankingtest.service.ClientService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,10 +11,11 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/clients")
 public class ClientController {
-    @Autowired
-    private ClientService clientService;
+
+    private final ClientService clientService;
 
     @GetMapping
     public List<Client> getAllClients() {

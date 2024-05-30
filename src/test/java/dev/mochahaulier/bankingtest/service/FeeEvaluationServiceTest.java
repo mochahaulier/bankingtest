@@ -54,28 +54,19 @@ public class FeeEvaluationServiceTest {
         accountProductDefinition.setProductKey("PA004A");
         accountProductDefinition.setType(ProductType.ACCOUNT);
         accountProductDefinition.setRate(new BigDecimal("150"));
-        PayRate payRate = new PayRate();
-        payRate.setUnit(PayRateUnit.DAY);
-        payRate.setValue(14);
-        accountProductDefinition.setPayRate(payRate);
+        accountProductDefinition.setPayRate(new PayRate(PayRateUnit.DAY, 14));
 
         account2ProductDefinition = new ProductDefinition();
         account2ProductDefinition.setProductKey("PA004B");
         account2ProductDefinition.setType(ProductType.ACCOUNT);
         account2ProductDefinition.setRate(new BigDecimal("0.5"));
-        PayRate payRate2 = new PayRate();
-        payRate2.setUnit(PayRateUnit.DAY);
-        payRate2.setValue(14);
-        account2ProductDefinition.setPayRate(payRate2);
+        account2ProductDefinition.setPayRate(new PayRate(PayRateUnit.DAY, 14));
 
         loanProductDefinition = new ProductDefinition();
         loanProductDefinition.setProductKey("CL48S5");
         loanProductDefinition.setType(ProductType.LOAN);
         loanProductDefinition.setRate(new BigDecimal("0.5"));
-        PayRate payRateL = new PayRate();
-        payRateL.setUnit(PayRateUnit.MONTH);
-        payRateL.setValue(3);
-        loanProductDefinition.setPayRate(payRateL);
+        loanProductDefinition.setPayRate(new PayRate(PayRateUnit.MONTH, 3));
 
         // Create Products
         accountProduct = new Product();

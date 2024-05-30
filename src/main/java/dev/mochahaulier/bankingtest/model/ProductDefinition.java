@@ -6,6 +6,9 @@ import java.time.Instant;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
+import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -27,9 +30,14 @@ public class ProductDefinition {
     private BigDecimal rate;
 
     @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "unit", column = @Column(name = "pay_rate_unit")),
+            @AttributeOverride(name = "value", column = @Column(name = "pay_rate_value"))
+    })
     private PayRate payRate;
 
     @CreationTimestamp
+    @Column(updatable = false)
     private Instant createdDate;
     @UpdateTimestamp
     private Instant modifiedDate;

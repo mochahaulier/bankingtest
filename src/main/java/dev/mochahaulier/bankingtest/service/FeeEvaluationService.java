@@ -5,8 +5,11 @@ import dev.mochahaulier.bankingtest.model.ProductDefinition;
 import dev.mochahaulier.bankingtest.model.ProductType;
 import dev.mochahaulier.bankingtest.model.RateType;
 import dev.mochahaulier.bankingtest.repository.ClientProductRepository;
+import lombok.AllArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.integration.support.locks.LockRegistry;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,31 +19,45 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
 
 @Service
+@AllArgsConstructor
 public class FeeEvaluationService {
 
-    @Autowired
-    private ClientProductRepository clientProductRepository;
+    private final ClientProductRepository clientProductRepository;
+    private final LockRegistry lockRegistry;
 
-    public FeeEvaluationService(ClientProductRepository clientProductRepository) {
-        this.clientProductRepository = clientProductRepository;
-    }
+    private static final Logger logger = LoggerFactory.getLogger(FeeEvaluationService.class);
 
-    @Scheduled(cron = "0 0 0 * * ?")
     @Transactional
+    @Scheduled(cron = "${scheduling.fee-calculation-cron}")
     public void evaluateFees() {
-        // Runs for all Clients and their products.
-        List<ClientProduct> clientProducts = clientProductRepository.findAll();
+        Lock lock = lockRegistry.obtain("feeCalculationLock");
+        if (lock.tryLock()) {
+            try {
+                logger.info("Fee calculation task started");
+                // Runs for all Clients and their products.
+                List<ClientProduct> clientProducts = clientProductRepository.findAll();
 
-        for (ClientProduct clientProduct : clientProducts) {
-            if (clientProduct.isDueForCharge()) {
-                BigDecimal fee = calculateFee(clientProduct);
-                deductFee(clientProduct, fee);
-                clientProduct.setLastChargeDate(LocalDate.now());
-                clientProductRepository.save(clientProduct);
+                for (ClientProduct clientProduct : clientProducts) {
+                    if (clientProduct.isDueForCharge()) {
+                        BigDecimal fee = calculateFee(clientProduct);
+                        deductFee(clientProduct, fee);
+                        clientProduct.setLastChargeDate(LocalDate.now());
+                        clientProductRepository.save(clientProduct);
+                    }
+                }
+                logger.info("Fee evaluation completed.");
+            } catch (Exception e) {
+                logger.error("Error executing fee evaluation.", e);
+            } finally {
+                lock.unlock();
             }
+        } else {
+            logger.info("Fee evaluation already running on another node.");
         }
+
     }
 
     private BigDecimal calculateFee(ClientProduct clientProduct) {
@@ -65,7 +82,7 @@ public class FeeEvaluationService {
             if (productDefinition.getType() == ProductType.LOAN) {
                 int numberOfDueDates = clientProduct.calculateNumberOfDueDates();
                 BigDecimal interest = clientProduct.getOriginalAmount().multiply(rate)
-                        .divide(BigDecimal.valueOf(numberOfDueDates), RoundingMode.HALF_UP);
+                        .divide(BigDecimal.valueOf(numberOfDueDates), RoundingMode.HALF_EVEN);
                 return clientProduct.getFixedInstallment().add(interest);
             }
         }

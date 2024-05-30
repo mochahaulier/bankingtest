@@ -2,15 +2,16 @@ package dev.mochahaulier.bankingtest.controller;
 
 import dev.mochahaulier.bankingtest.dto.ProductDefinitionRequest;
 import dev.mochahaulier.bankingtest.service.ProductDefinitionService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/product-definitions")
 public class ProductDefinitionController {
 
-    @Autowired
-    private ProductDefinitionService productDefinitionService;
+    private final ProductDefinitionService productDefinitionService;
 
     @PostMapping
     public void processProductDefinitions(@RequestBody ProductDefinitionRequest productDefinitionRequest) {

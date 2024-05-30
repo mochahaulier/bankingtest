@@ -2,21 +2,22 @@ package dev.mochahaulier.bankingtest.controller;
 
 import dev.mochahaulier.bankingtest.model.ClientProduct;
 import dev.mochahaulier.bankingtest.service.ClientProductService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/client-products")
 public class ClientProductController {
 
-    @Autowired
-    private ClientProductService clientProductService;
+    private final ClientProductService clientProductService;
 
     @PostMapping
     public ClientProduct createClientProduct(@RequestParam Long clientId,

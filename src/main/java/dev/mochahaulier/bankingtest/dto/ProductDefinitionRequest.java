@@ -1,17 +1,26 @@
 package dev.mochahaulier.bankingtest.dto;
 
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
-import lombok.Data;
 
+import org.springframework.validation.annotation.Validated;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+
+@Validated
 @Data
 public class ProductDefinitionRequest {
+    @NotNull(message = "Definitions list cannot be null.")
     private List<DefinitionRequest> definitions;
 
+    @Validated
     @Data
     public static class DefinitionRequest {
         @NotNull(message = "Operation is required.")
@@ -23,16 +32,22 @@ public class ProductDefinitionRequest {
         @NotNull(message = "Please provide a description.")
         private String description;
         // Just for the given example, there could probably be different types.
+        @NotNull(message = "Type is required.")
         @Pattern(regexp = "^(ACCOUNT|LOAN)$", message = "Type must be 'ACCOUNT' or 'LOAN'.")
         private String type;
         // An assumption here, but it's a bank so probably not gonna be negative or 0
+        @NotNull(message = "Rate is required.")
         @DecimalMin(value = "0.0", inclusive = false, message = "Rate must be greater than 0.")
         private BigDecimal rate;
-        @NotNull(message = "Pay rate unit is required.")
+        @Valid
         private PayRateDto payRate;
 
+        @Validated
         @Data
+        @AllArgsConstructor
+        @RequiredArgsConstructor
         public static class PayRateDto {
+            @NotNull(message = "Pay rate unit is required.")
             @Pattern(regexp = "^(DAY|MONTH)$", message = "Unit must be 'DATE' or 'MONTH'.")
             private String unit;
             // Another assumption here

@@ -6,7 +6,6 @@ import dev.mochahaulier.bankingtest.model.Product;
 import dev.mochahaulier.bankingtest.repository.ClientProductRepository;
 import dev.mochahaulier.bankingtest.repository.ClientRepository;
 import dev.mochahaulier.bankingtest.repository.ProductRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -14,18 +13,17 @@ import java.time.LocalDate;
 import java.util.List;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class ClientProductService {
 
-    @Autowired
-    private ClientProductRepository clientProductRepository;
+    private final ClientProductRepository clientProductRepository;
 
-    @Autowired
-    private ClientRepository clientRepository;
+    private final ClientRepository clientRepository;
 
-    @Autowired
-    private ProductRepository productRepository;
+    private final ProductRepository productRepository;
 
     @Transactional
     public ClientProduct createClientProduct(Long clientId, Long productId, BigDecimal initialBalance,
