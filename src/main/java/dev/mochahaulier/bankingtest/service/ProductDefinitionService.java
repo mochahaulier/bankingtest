@@ -25,6 +25,8 @@ public class ProductDefinitionService {
 
     private final ProductRepository productRepository;
 
+    private final ProductService productService;
+
     @Transactional
     public void processProductDefinitions(List<ProductDefinitionRequest.DefinitionRequest> requests) {
         for (ProductDefinitionRequest.DefinitionRequest request : requests) {
@@ -93,7 +95,11 @@ public class ProductDefinitionService {
             }
             // here else "percentage" - not needed at this moment
             productRepository.save(product);
+
+            // Maybe I could use this, but probably needs rules how to handle changes
+            // productService.updateProductRate(product.getId(), product.getRate());
         }
 
     }
+
 }

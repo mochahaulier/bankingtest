@@ -1,10 +1,14 @@
-package dev.mochahaulier.bankingtest.model;
+package dev.mochahaulier.bankingtest.service;
 
 import dev.mochahaulier.bankingtest.dto.ProductDefinitionRequest.DefinitionRequest;
 import dev.mochahaulier.bankingtest.dto.ProductDefinitionRequest.DefinitionRequest.PayRateDto;
+import dev.mochahaulier.bankingtest.model.PayRate;
+import dev.mochahaulier.bankingtest.model.PayRateUnit;
+import dev.mochahaulier.bankingtest.model.Product;
+import dev.mochahaulier.bankingtest.model.ProductDefinition;
+import dev.mochahaulier.bankingtest.model.ProductType;
 import dev.mochahaulier.bankingtest.repository.ProductDefinitionRepository;
 import dev.mochahaulier.bankingtest.repository.ProductRepository;
-import dev.mochahaulier.bankingtest.service.ProductDefinitionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,6 +33,9 @@ public class ProductDefinitionServiceTest {
 
     @Mock
     private ProductRepository productRepository;
+
+    @Mock
+    private ProductService productService;
 
     @InjectMocks
     private ProductDefinitionService productDefinitionService;
@@ -53,7 +61,7 @@ public class ProductDefinitionServiceTest {
         updateDefinitionRequest = new DefinitionRequest();
         updateDefinitionRequest.setOperation("U");
         updateDefinitionRequest.setProductKey("MO0154");
-        updateDefinitionRequest.setRate(BigDecimal.valueOf(0.06));
+        updateDefinitionRequest.setRate(BigDecimal.valueOf(10));
         PayRateDto updatePayRateDto = new PayRateDto("MONTH", 2);
         updateDefinitionRequest.setPayRate(updatePayRateDto);
 
@@ -70,7 +78,7 @@ public class ProductDefinitionServiceTest {
         existingProductDefinition.setProductKey("MO0154");
         existingProductDefinition.setDescription("mortgage loan");
         existingProductDefinition.setType(ProductType.LOAN);
-        existingProductDefinition.setRate(BigDecimal.valueOf(0.05));
+        existingProductDefinition.setRate(BigDecimal.valueOf(20));
         existingProductDefinition.setPayRate(new PayRate(PayRateUnit.MONTH, 1));
     }
 
@@ -92,7 +100,7 @@ public class ProductDefinitionServiceTest {
 
         productDefinitionService.processProductDefinitions(Collections.singletonList(updateDefinitionRequest));
 
-        assertEquals(BigDecimal.valueOf(0.06), existingProductDefinition.getRate());
+        assertEquals(BigDecimal.valueOf(10), existingProductDefinition.getRate());
         assertEquals(PayRateUnit.MONTH, existingProductDefinition.getPayRate().getUnit());
         assertEquals(2, existingProductDefinition.getPayRate().getValue());
         verify(productDefinitionRepository, times(1)).findById(updateDefinitionRequest.getProductKey());
@@ -108,5 +116,36 @@ public class ProductDefinitionServiceTest {
 
         verify(productDefinitionRepository, times(1)).findById(updateDefinitionRequest.getProductKey());
         verify(productDefinitionRepository, times(0)).save(any(ProductDefinition.class));
+    }
+
+    @Test
+    public void testProcessProductDefinitions_UpdateProduct_DerivedProductRateFix() {
+        // Arrange
+        when(productDefinitionRepository.findById(updateDefinitionRequest.getProductKey()))
+                .thenReturn(Optional.of(existingProductDefinition));
+
+        Product product = new Product();
+        product.setId(1L);
+        product.setProductDefinition(existingProductDefinition);
+        product.setRate(BigDecimal.valueOf(-11));
+
+        List<Product> products = Collections.singletonList(product);
+
+        when(productRepository.findByProductDefinition(existingProductDefinition)).thenReturn(products);
+
+        // Act
+        productDefinitionService.processProductDefinitions(Collections.singletonList(updateDefinitionRequest));
+
+        // Assert
+        assertEquals(BigDecimal.valueOf(10), existingProductDefinition.getRate());
+        assertEquals(PayRateUnit.MONTH, existingProductDefinition.getPayRate().getUnit());
+        assertEquals(2, existingProductDefinition.getPayRate().getValue());
+        verify(productDefinitionRepository, times(1)).findById(updateDefinitionRequest.getProductKey());
+        verify(productDefinitionRepository, times(1)).save(existingProductDefinition);
+
+        // Verify that updateDerivedProducts sets the value to ZERO in this simple
+        // version
+        verify(productRepository, times(1)).findByProductDefinition(existingProductDefinition);
+        assertEquals(BigDecimal.ZERO, product.getRate());
     }
 }
