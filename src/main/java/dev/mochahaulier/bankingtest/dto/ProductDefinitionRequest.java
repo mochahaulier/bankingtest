@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
 
+import dev.mochahaulier.bankingtest.model.Operation;
 import dev.mochahaulier.bankingtest.validation.ValidationGroup;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,8 +23,9 @@ public class ProductDefinitionRequest {
         @Data
         public static class DefinitionRequest {
                 @NotNull(message = "Operation is required.")
-                @Pattern(regexp = "^[NU]$", message = "Operation must be 'N' or 'U'.")
-                private String operation;
+                // @Pattern(regexp = "^[NU]$", message = "Operation must be 'N' or 'U'.")
+                private Operation operation;
+                // private String operation;
                 @NotNull(message = "Product key is required.", groups = {
                                 ValidationGroup.NewOperation.class, ValidationGroup.UpdateOperation.class })
                 @Size(min = 6, max = 6, message = "Product key must have 6 characters.", groups = {

@@ -1,6 +1,7 @@
 package dev.mochahaulier.bankingtest.service;
 
 import dev.mochahaulier.bankingtest.dto.ProductDefinitionRequest;
+import dev.mochahaulier.bankingtest.dto.ProductDefinitionResponse;
 import dev.mochahaulier.bankingtest.model.PayRate;
 import dev.mochahaulier.bankingtest.model.PayRateUnit;
 import dev.mochahaulier.bankingtest.model.Product;
@@ -12,10 +13,13 @@ import dev.mochahaulier.bankingtest.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -25,19 +29,38 @@ public class ProductDefinitionService {
 
     private final ProductRepository productRepository;
 
-    private final ProductService productService;
-
     @Transactional
-    public void processProductDefinitions(List<ProductDefinitionRequest.DefinitionRequest> requests) {
-        for (ProductDefinitionRequest.DefinitionRequest request : requests) {
-            ProductDefinition existingDefinition = productDefinitionRepository.findById(request.getProductKey())
-                    .orElse(null);
+    public ProductDefinitionResponse processProductDefinitions(
+            Map<Integer, ProductDefinitionRequest.DefinitionRequest> definitions) {
+        List<String> errors = new ArrayList<>();
+        List<String> successes = new ArrayList<>();
 
-            if ("N".equals(request.getOperation())) {
+        for (Map.Entry<Integer, ProductDefinitionRequest.DefinitionRequest> entry : definitions.entrySet()) {
+            int index = entry.getKey();
+            ProductDefinitionRequest.DefinitionRequest definition = entry.getValue();
+            try {
+                processSingleDefinition(definition);
+                successes.add("[" + index + "]: [PROCESSING SUCCESS]: ");
+            } catch (Exception e) {
+                errors.add("[" + index + "]: [PROCESSING ERROR]: " + e.getMessage());
+            }
+        }
+
+        // if (!errors.isEmpty()) {
+        // throw new ProcessingException(errors);
+        // }
+        return new ProductDefinitionResponse(errors, successes);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void processSingleDefinition(ProductDefinitionRequest.DefinitionRequest request) {
+        ProductDefinition existingDefinition = productDefinitionRepository.findById(request.getProductKey())
+                .orElse(null);
+        switch (request.getOperation()) {
+            case NEW:
                 if (existingDefinition != null) {
-                    // Maybe just skip here, or need to process all?
                     throw new IllegalArgumentException(
-                            "Product definition with key " + request.getProductKey() + " already exists.");
+                            "Product definition with key " + request.getProductKey() + " already exists");
                 }
                 ProductDefinition productDefinition = new ProductDefinition();
                 productDefinition.setProductKey(request.getProductKey());
@@ -49,28 +72,34 @@ public class ProductDefinitionService {
                 payRate.setValue(request.getPayRate().getValue());
                 productDefinition.setPayRate(payRate);
                 productDefinitionRepository.save(productDefinition);
-            } else if ("U".equals(request.getOperation())) {
+                break;
+            case UPDATE:
                 if (existingDefinition == null) {
-                    // Maybe just skip here, or need to process all?
-                    return;
-                    // throw new IllegalArgumentException(
-                    // "Product with key " + request.getProductKey() + " does not exist.");
+                    throw new IllegalArgumentException(
+                            "Product definition with key " + request.getProductKey() + " doesn't exist!");
                 }
-                // can only change payrate and rate
-                // maybe add some tests here, if trying to change something you can't
-                // or if nothing is changed
-                existingDefinition.setRate(request.getRate());
-                PayRate payRate = existingDefinition.getPayRate();
-                payRate.setUnit(PayRateUnit.valueOf(request.getPayRate().getUnit()));
-                payRate.setValue(request.getPayRate().getValue());
+                updateExistingDefinition(existingDefinition, request);
                 productDefinitionRepository.save(existingDefinition);
-                // check/update all products that use this
-                // with the current setup, testing if not negative for fixed values is enough
-                // but maybe the dbs need to be changed and modified and additional changes need
-                // to be done here.
                 updateDerivedProducts(existingDefinition);
-            }
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid operation: " + request.getOperation());
         }
+    }
+
+    private void updateExistingDefinition(ProductDefinition existingDefinition,
+            ProductDefinitionRequest.DefinitionRequest request) {
+        // can only change payrate and rate
+        // maybe add some tests here, if trying to change something you can't
+        // or if nothing is changed
+        existingDefinition.setRate(request.getRate());
+        PayRate payRate = existingDefinition.getPayRate();
+        payRate.setUnit(PayRateUnit.valueOf(request.getPayRate().getUnit()));
+        payRate.setValue(request.getPayRate().getValue());
+        // check/update all products that use this
+        // with the current setup, testing if not negative for fixed values is enough
+        // but maybe the dbs need to be changed and modified and additional changes need
+        // to be done here.
     }
 
     private void updateDerivedProducts(ProductDefinition definition) {
