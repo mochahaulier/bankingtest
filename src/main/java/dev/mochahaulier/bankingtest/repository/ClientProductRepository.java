@@ -13,5 +13,5 @@ import org.springframework.stereotype.Repository;
 public interface ClientProductRepository extends JpaRepository<ClientProduct, Long> {
     List<ClientProduct> findByClientId(Long clientId);
 
-    List<ClientProduct> findByClientAndProduct_ProductDefinition_Type(Client client, ProductType type);
+    List<ClientProduct> findByClientAndProduct_ProductDefinition_ProductType(Client client, ProductType productType);
 }

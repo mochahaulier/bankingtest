@@ -1,6 +1,8 @@
 package dev.mochahaulier.bankingtest.service;
 
+import dev.mochahaulier.bankingtest.model.AccountProduct;
 import dev.mochahaulier.bankingtest.model.ClientProduct;
+import dev.mochahaulier.bankingtest.model.LoanProduct;
 import dev.mochahaulier.bankingtest.model.ProductDefinition;
 import dev.mochahaulier.bankingtest.model.ProductType;
 import dev.mochahaulier.bankingtest.model.RateType;
@@ -20,6 +22,7 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -76,39 +79,44 @@ public class FeeEvaluationService {
             BigDecimal rateCP = clientProduct.getRate();
             // The final rate: PD * (1 + CP)
             BigDecimal rate = ratePD.multiply(rateCP.add(BigDecimal.ONE));
-            if (productDefinition.getType() == ProductType.ACCOUNT) {
-                return clientProduct.getBalance().multiply(rate);
+            if (productDefinition.getProductType() == ProductType.ACCOUNT) {
+                AccountProduct accountProduct = (AccountProduct) clientProduct;
+                return accountProduct.getAccountBalance().multiply(rate);
             }
-            if (productDefinition.getType() == ProductType.LOAN) {
-                int numberOfDueDates = clientProduct.calculateNumberOfDueDates();
-                BigDecimal interest = clientProduct.getOriginalAmount().multiply(rate)
+            if (productDefinition.getProductType() == ProductType.LOAN) {
+                LoanProduct loanProduct = (LoanProduct) clientProduct;
+                int numberOfDueDates = loanProduct.calculateNumberOfDueDates();
+                BigDecimal interest = loanProduct.getOriginalAmount().multiply(rate)
                         .divide(BigDecimal.valueOf(numberOfDueDates), RoundingMode.HALF_EVEN);
-                return clientProduct.getFixedInstallment().add(interest);
+                return loanProduct.getFixedInstallment().add(interest);
             }
         }
 
         // Shouldn't actually get here with the current setup.
-        throw new IllegalArgumentException("Unknown product type: " + productDefinition.getType());
+        throw new IllegalArgumentException("Unknown product type: " + productDefinition.getProductType());
     }
 
     private void deductFee(ClientProduct clientProduct, BigDecimal fee) {
         // Find the first account of the client to deduct the fee
         // Not the best solution, does he need to have account, etc...
         // Get all clientproducts that are accounts
-        List<ClientProduct> clientAccounts = clientProductRepository
-                .findByClientAndProduct_ProductDefinition_Type(clientProduct.getClient(), ProductType.ACCOUNT);
+        List<AccountProduct> clientAccounts = clientProductRepository
+                .findByClientAndProduct_ProductDefinition_ProductType(clientProduct.getClient(), ProductType.ACCOUNT)
+                .stream()
+                .map(AccountProduct.class::cast)
+                .collect(Collectors.toList());
 
         if (clientAccounts.isEmpty()) {
             throw new IllegalStateException("No account found for client " + clientProduct.getClient().getId());
         }
 
         // Select account with smallest ID
-        ClientProduct account = clientAccounts.stream()
+        AccountProduct account = clientAccounts.stream()
                 .min(Comparator.comparing(ClientProduct::getId))
                 .orElseThrow(() -> new RuntimeException("No account found."));
 
         // Deduct the fee from first account
-        account.setBalance(account.getBalance().subtract(fee));
+        account.setAccountBalance(account.getAccountBalance().subtract(fee));
         clientProductRepository.save(account);
     }
 }

@@ -14,10 +14,15 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import lombok.Data;
 
 @Entity
 @Data
+@Table(name = "product_definition", indexes = {
+        @Index(name = "idx_product_key", columnList = "product_key")
+})
 public class ProductDefinition {
     @Id
     private String productKey;
@@ -25,7 +30,7 @@ public class ProductDefinition {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    private ProductType type;
+    private ProductType productType;
 
     private BigDecimal rate;
 

@@ -8,6 +8,7 @@ import java.time.LocalDate;
 
 @Entity
 @Data
+@Inheritance(strategy = InheritanceType.JOINED)
 public class ClientProduct {
 
     @Id
@@ -22,15 +23,9 @@ public class ClientProduct {
     @JoinColumn(name = "product_key", nullable = false)
     private Product product;
 
-    // For accounts
-    private BigDecimal balance;
+    @Enumerated(EnumType.STRING)
+    private ProductType type;
 
-    // For loans
-    private BigDecimal originalAmount;
-    private BigDecimal fixedInstallment;
-
-    private LocalDate startDate;
-    private LocalDate endDate;
     private LocalDate lastChargeDate;
 
     public ProductDefinition getProductDefinition() {
@@ -41,29 +36,11 @@ public class ClientProduct {
         return product.getRate();
     }
 
-    // Return the number of due dates since
-    // Might be good to save in the DB directly, but then would need to update with
-    // changes in PayRate.
-    public int calculateNumberOfDueDates() {
-        // shouldn't happen
-        if (endDate == null || startDate == null)
-            return 0;
-
-        ProductDefinition productDefinition = product.getProductDefinition();
-        long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
-
-        // Assuming that each month has 30 days...
-        int intervalDays = productDefinition.getPayRateUnit() == PayRateUnit.DAY ? productDefinition.getPayRateValue()
-                : productDefinition.getPayRateValue() * 30;
-
-        return (int) (daysBetween / intervalDays);
-    }
-
     public boolean isDueForCharge() {
         ProductDefinition productDefinition = product.getProductDefinition();
         if (lastChargeDate == null) {
             // Should probably set this at creation, but should be fine for now
-            lastChargeDate = startDate;
+            lastChargeDate = java.time.LocalDate.now(); // startDate;
         }
         long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(lastChargeDate, LocalDate.now());
         // assuming every month has 30 days

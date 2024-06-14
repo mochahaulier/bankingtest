@@ -1,18 +1,19 @@
 package dev.mochahaulier.bankingtest.service;
 
+import dev.mochahaulier.bankingtest.dto.ClientProductRequest;
+import dev.mochahaulier.bankingtest.model.AccountProduct;
 import dev.mochahaulier.bankingtest.model.Client;
 import dev.mochahaulier.bankingtest.model.ClientProduct;
+import dev.mochahaulier.bankingtest.model.LoanProduct;
 import dev.mochahaulier.bankingtest.model.Product;
 import dev.mochahaulier.bankingtest.repository.ClientProductRepository;
 import dev.mochahaulier.bankingtest.repository.ClientRepository;
 import dev.mochahaulier.bankingtest.repository.ProductRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -26,33 +27,48 @@ public class ClientProductService {
     private final ProductRepository productRepository;
 
     @Transactional
-    public ClientProduct createClientProduct(Long clientId, Long productId, BigDecimal initialBalance,
-            BigDecimal loanAmount, LocalDate startDate, LocalDate endDate, BigDecimal fixedInstallment) {
-        Client client = clientRepository.findById(clientId)
+    public ClientProduct createClientProduct(ClientProductRequest request) {
+        Client client = clientRepository.findById(request.getClientId())
                 .orElseThrow(() -> new IllegalArgumentException("Client not found"));
 
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
 
-        ClientProduct clientProduct = new ClientProduct();
+        ClientProduct clientProduct;
+
+        switch (product.getProductType()) {
+            case ACCOUNT:
+                AccountProduct accountProduct = new AccountProduct();
+                accountProduct.setStartDate(request.getStartDate());
+                accountProduct.setAccountBalance(request.getInitialBalance());
+                clientProduct = accountProduct;
+                break;
+            case LOAN:
+                LoanProduct loanProduct = new LoanProduct();
+                loanProduct.setStartDate(request.getStartDate());
+                loanProduct.setEndDate(request.getEndDate());
+                loanProduct.setFixedInstallment(request.getFixedInstallment());
+                loanProduct.setOriginalAmount(request.getLoanAmount());
+                clientProduct = loanProduct;
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported product type: " + product.getProductType());
+        }
+
         clientProduct.setClient(client);
         clientProduct.setProduct(product);
-        clientProduct.setBalance(initialBalance);
-        clientProduct.setOriginalAmount(loanAmount);
-        clientProduct.setStartDate(startDate);
-        clientProduct.setEndDate(endDate);
-        clientProduct.setFixedInstallment(fixedInstallment);
-        clientProduct.setLastChargeDate(startDate);
+        clientProduct.setType(product.getProductType());
+        clientProduct.setLastChargeDate(request.getStartDate());
 
         return clientProductRepository.save(clientProduct);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<ClientProduct> getAllClientProducts() {
         return clientProductRepository.findAll();
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<ClientProduct> getClientProductsByClientId(Long clientId) {
         return clientProductRepository.findByClientId(clientId);
     }

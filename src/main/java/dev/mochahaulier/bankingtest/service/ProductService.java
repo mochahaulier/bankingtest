@@ -5,6 +5,8 @@ import dev.mochahaulier.bankingtest.model.ProductDefinition;
 import dev.mochahaulier.bankingtest.model.RateType;
 import dev.mochahaulier.bankingtest.repository.ProductDefinitionRepository;
 import dev.mochahaulier.bankingtest.repository.ProductRepository;
+
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -32,10 +34,13 @@ public class ProductService {
         Product product = new Product();
         product.setProductDefinition(productDefinition);
         product.setRate(customRate);
+        product.setProductType(productDefinition.getProductType());
+        product.setRateType(productDefinition.getRateType());
         return productRepository.save(product);
     }
 
     @Transactional
+    @Cacheable("products")
     public List<Product> getAllProducts() {
         return productRepository.findAll();
     }

@@ -40,7 +40,8 @@ public class ProductDefinitionService {
             ProductDefinitionRequest.DefinitionRequest definition = entry.getValue();
             try {
                 processSingleDefinition(definition);
-                successes.add("[" + index + "]: [PROCESSING SUCCESS]: ");
+                successes.add("[" + index + "]: [PROCESSING SUCCESS]: Definition " + definition.getProductKey()
+                        + " processed.");
             } catch (Exception e) {
                 errors.add("[" + index + "]: [PROCESSING ERROR]: " + e.getMessage());
             }
@@ -65,7 +66,7 @@ public class ProductDefinitionService {
                 ProductDefinition productDefinition = new ProductDefinition();
                 productDefinition.setProductKey(request.getProductKey());
                 productDefinition.setDescription(request.getDescription());
-                productDefinition.setType(ProductType.valueOf(request.getType()));
+                productDefinition.setProductType(ProductType.valueOf(request.getType()));
                 productDefinition.setRate(request.getRate());
                 PayRate payRate = new PayRate();
                 payRate.setUnit(PayRateUnit.valueOf(request.getPayRate().getUnit()));

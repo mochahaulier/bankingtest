@@ -1,13 +1,12 @@
 package dev.mochahaulier.bankingtest.controller;
 
+import dev.mochahaulier.bankingtest.dto.ClientProductRequest;
 import dev.mochahaulier.bankingtest.model.ClientProduct;
 import dev.mochahaulier.bankingtest.service.ClientProductService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 
 import jakarta.validation.Valid;
@@ -20,16 +19,8 @@ public class ClientProductController {
     private final ClientProductService clientProductService;
 
     @PostMapping
-    public ClientProduct createClientProduct(@RequestParam Long clientId,
-            @RequestParam Long productId,
-            @RequestParam BigDecimal initialBalance,
-            @RequestParam BigDecimal loanAmount,
-            @RequestParam @Valid LocalDate startDate,
-            @RequestParam @Valid LocalDate endDate,
-            @RequestParam BigDecimal fixedInstallment) {
-        return clientProductService.createClientProduct(clientId, productId, initialBalance, loanAmount, startDate,
-                endDate,
-                fixedInstallment);
+    public ClientProduct createClientProduct(@RequestBody @Valid ClientProductRequest request) {
+        return clientProductService.createClientProduct(request);
     }
 
     @GetMapping
