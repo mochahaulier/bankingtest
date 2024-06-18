@@ -1,11 +1,6 @@
 package dev.mochahaulier.bankingtest.service;
 
-import dev.mochahaulier.bankingtest.model.AccountProduct;
 import dev.mochahaulier.bankingtest.model.ClientProduct;
-import dev.mochahaulier.bankingtest.model.LoanProduct;
-import dev.mochahaulier.bankingtest.model.ProductDefinition;
-import dev.mochahaulier.bankingtest.model.ProductType;
-import dev.mochahaulier.bankingtest.model.RateType;
 import dev.mochahaulier.bankingtest.repository.ClientProductRepository;
 import lombok.AllArgsConstructor;
 
@@ -17,18 +12,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
 public class FeeEvaluationService {
 
     private final ClientProductRepository clientProductRepository;
+    private final FeeCalculationService feeCalculationService;
+    private final TransactionService transactionService;
     private final LockRegistry lockRegistry;
 
     private static final Logger logger = LoggerFactory.getLogger(FeeEvaluationService.class);
@@ -45,8 +39,8 @@ public class FeeEvaluationService {
 
                 for (ClientProduct clientProduct : clientProducts) {
                     if (clientProduct.isDueForCharge()) {
-                        BigDecimal fee = calculateFee(clientProduct);
-                        deductFee(clientProduct, fee);
+                        BigDecimal fee = feeCalculationService.calculateFee(clientProduct);
+                        transactionService.processFeeDeduction(clientProduct, fee);
                         clientProduct.setLastChargeDate(LocalDate.now());
                         clientProductRepository.save(clientProduct);
                     }
@@ -61,62 +55,5 @@ public class FeeEvaluationService {
             logger.info("Fee evaluation already running on another node.");
         }
 
-    }
-
-    private BigDecimal calculateFee(ClientProduct clientProduct) {
-        ProductDefinition productDefinition = clientProduct.getProductDefinition();
-
-        // for RateType fixed the fee is just the rate
-        if (productDefinition.getRateType() == RateType.FIXED) {
-            return productDefinition.getRate().add(clientProduct.getRate());
-        }
-
-        // for percentage fixed the fee is just the rate
-        if (productDefinition.getRateType() == RateType.PERCENTAGE) {
-            // The main rate from the definition
-            BigDecimal ratePD = productDefinition.getRate();
-            // The custom clientproduct rate.
-            BigDecimal rateCP = clientProduct.getRate();
-            // The final rate: PD * (1 + CP)
-            BigDecimal rate = ratePD.multiply(rateCP.add(BigDecimal.ONE));
-            if (productDefinition.getProductType() == ProductType.ACCOUNT) {
-                AccountProduct accountProduct = (AccountProduct) clientProduct;
-                return accountProduct.getAccountBalance().multiply(rate);
-            }
-            if (productDefinition.getProductType() == ProductType.LOAN) {
-                LoanProduct loanProduct = (LoanProduct) clientProduct;
-                int numberOfDueDates = loanProduct.calculateNumberOfDueDates();
-                BigDecimal interest = loanProduct.getOriginalAmount().multiply(rate)
-                        .divide(BigDecimal.valueOf(numberOfDueDates), RoundingMode.HALF_EVEN);
-                return loanProduct.getFixedInstallment().add(interest);
-            }
-        }
-
-        // Shouldn't actually get here with the current setup.
-        throw new IllegalArgumentException("Unknown product type: " + productDefinition.getProductType());
-    }
-
-    private void deductFee(ClientProduct clientProduct, BigDecimal fee) {
-        // Find the first account of the client to deduct the fee
-        // Not the best solution, does he need to have account, etc...
-        // Get all clientproducts that are accounts
-        List<AccountProduct> clientAccounts = clientProductRepository
-                .findByClientAndProduct_ProductDefinition_ProductType(clientProduct.getClient(), ProductType.ACCOUNT)
-                .stream()
-                .map(AccountProduct.class::cast)
-                .collect(Collectors.toList());
-
-        if (clientAccounts.isEmpty()) {
-            throw new IllegalStateException("No account found for client " + clientProduct.getClient().getId());
-        }
-
-        // Select account with smallest ID
-        AccountProduct account = clientAccounts.stream()
-                .min(Comparator.comparing(ClientProduct::getId))
-                .orElseThrow(() -> new RuntimeException("No account found."));
-
-        // Deduct the fee from first account
-        account.setAccountBalance(account.getAccountBalance().subtract(fee));
-        clientProductRepository.save(account);
     }
 }

@@ -1,27 +1,39 @@
 package dev.mochahaulier.bankingtest.model;
 
-import lombok.Getter;
-import lombok.Setter;
-import jakarta.persistence.*;
-
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Objects;
-import java.util.Set;
 
 import org.hibernate.proxy.HibernateProxy;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Getter
 @Setter
-public class Client {
+public class Transaction {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
-    private String email;
+    @ManyToOne
+    private ClientProduct clientProduct;
 
-    @OneToMany(mappedBy = "client")
-    private Set<ClientProduct> clientProducts;
+    @Enumerated(EnumType.STRING)
+    private TransactionType transactionType;
+
+    private BigDecimal amount;
+
+    private LocalDateTime transactionDate;
 
     @Override
     public final boolean equals(Object o) {
@@ -37,8 +49,8 @@ public class Client {
                 : this.getClass();
         if (thisEffectiveClass != oEffectiveClass)
             return false;
-        Client client = (Client) o;
-        return getId() != null && Objects.equals(getId(), client.getId());
+        Transaction transaction = (Transaction) o;
+        return getId() != null && Objects.equals(getId(), transaction.getId());
     }
 
     @Override

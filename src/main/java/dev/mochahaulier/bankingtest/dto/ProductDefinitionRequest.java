@@ -58,7 +58,7 @@ public class ProductDefinitionRequest {
                         @NotNull(message = "Pay rate value is required.", groups = ValidationGroup.NewOperation.class)
                         @DecimalMin(value = "1", message = "Pay rate value must be at least 1.", groups = {
                                         ValidationGroup.NewOperation.class, ValidationGroup.UpdateOperation.class })
-                        private int value;
+                        private Integer value;
                 }
         }
 }

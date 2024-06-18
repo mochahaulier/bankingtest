@@ -13,7 +13,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/client-products")
+@RequestMapping("/api/v1/client-products")
 public class ClientProductController {
 
     private final ClientProductService clientProductService;

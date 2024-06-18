@@ -2,7 +2,6 @@ package dev.mochahaulier.bankingtest.service;
 
 import dev.mochahaulier.bankingtest.model.Product;
 import dev.mochahaulier.bankingtest.model.ProductDefinition;
-import dev.mochahaulier.bankingtest.model.RateType;
 import dev.mochahaulier.bankingtest.repository.ProductDefinitionRepository;
 import dev.mochahaulier.bankingtest.repository.ProductRepository;
 
@@ -68,24 +67,49 @@ public class ProductService {
     }
 
     private void validateCustomRate(ProductDefinition productDefinition, BigDecimal customRate) {
-        // Maybe productDefinition.getType() == ProductType.ACCOUNT, if always fixed for
-        // accounts, but usede solution more general I supppose...
-        if (productDefinition.getRateType() == RateType.FIXED) {
-            if (customRate.compareTo(BigDecimal.valueOf(-250)) < 0
-                    || customRate.compareTo(BigDecimal.valueOf(250)) > 0) {
-                throw new IllegalArgumentException("Custom rate out of allowed range +-250");
-            }
-            // Needs to be checked with Product Updates. How to handle? For now set to zero
-            // if negatve...
-            BigDecimal newRate = productDefinition.getRate().add(customRate);
-            if (newRate.compareTo(BigDecimal.ZERO) < 0) {
-                throw new IllegalArgumentException("Final rate can't be negative: " + newRate + "(" + customRate + ")");
-            }
-        } else if (productDefinition.getRateType() == RateType.PERCENTAGE) {
-            if (customRate.compareTo(BigDecimal.valueOf(-0.2)) < 0
-                    || customRate.compareTo(BigDecimal.valueOf(0.2)) > 0) {
-                throw new IllegalArgumentException("Custom rate out of allowed range +-0.2");
-            }
+        switch (productDefinition.getRateType()) {
+            case FIXED:
+                validateFixedRate(productDefinition.getRate(), customRate);
+                break;
+            case PERCENTAGE:
+                validatePercentageRate(productDefinition.getRate(), customRate);
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown rate type: " + productDefinition.getRateType());
         }
+    }
+
+    private void validateFixedRate(BigDecimal baseRate, BigDecimal customRate) {
+        BigDecimal rateChange = customRate.subtract(baseRate);
+
+        if (!isValidFixedRate(rateChange)) {
+            throw new IllegalArgumentException("Custom rate out of allowed difference +-250");
+        }
+
+        if (customRate.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Final rate can't be negative: " + customRate);
+        }
+    }
+
+    private void validatePercentageRate(BigDecimal baseRate, BigDecimal customRate) {
+        BigDecimal rateChange = customRate.divide(baseRate).subtract(BigDecimal.ONE);
+
+        if (!isValidPercentageRate(rateChange)) {
+            throw new IllegalArgumentException("Custom rate out of allowed range +-0.2");
+        }
+    }
+
+    public Boolean isValidFixedRate(BigDecimal rateChange) {
+        if (rateChange.compareTo(BigDecimal.valueOf(-250)) < 0
+                || rateChange.compareTo(BigDecimal.valueOf(250)) > 0)
+            return false;
+        return true;
+    }
+
+    public Boolean isValidPercentageRate(BigDecimal rateChange) {
+        if (rateChange.compareTo(BigDecimal.valueOf(-0.2)) < 0
+                || rateChange.compareTo(BigDecimal.valueOf(0.2)) > 0)
+            return false;
+        return true;
     }
 }

@@ -7,7 +7,6 @@ import dev.mochahaulier.bankingtest.model.PayRateUnit;
 import dev.mochahaulier.bankingtest.model.Product;
 import dev.mochahaulier.bankingtest.model.ProductDefinition;
 import dev.mochahaulier.bankingtest.model.ProductType;
-import dev.mochahaulier.bankingtest.model.RateType;
 import dev.mochahaulier.bankingtest.repository.ProductDefinitionRepository;
 import dev.mochahaulier.bankingtest.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +16,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -47,9 +47,6 @@ public class ProductDefinitionService {
             }
         }
 
-        // if (!errors.isEmpty()) {
-        // throw new ProcessingException(errors);
-        // }
         return new ProductDefinitionResponse(errors, successes);
     }
 
@@ -79,57 +76,97 @@ public class ProductDefinitionService {
                     throw new IllegalArgumentException(
                             "Product definition with key " + request.getProductKey() + " doesn't exist!");
                 }
+                // save the oldrate so we can update the derived products
+                BigDecimal oldRate = existingDefinition.getRate();
                 updateExistingDefinition(existingDefinition, request);
-                productDefinitionRepository.save(existingDefinition);
-                updateDerivedProducts(existingDefinition);
+                updateDerivedProducts(existingDefinition, oldRate);
                 break;
             default:
                 throw new IllegalArgumentException("Invalid operation: " + request.getOperation());
         }
     }
 
+    @Transactional
     private void updateExistingDefinition(ProductDefinition existingDefinition,
             ProductDefinitionRequest.DefinitionRequest request) {
-        // can only change payrate and rate
-        // maybe add some tests here, if trying to change something you can't
-        // or if nothing is changed
-        existingDefinition.setRate(request.getRate());
-        PayRate payRate = existingDefinition.getPayRate();
-        payRate.setUnit(PayRateUnit.valueOf(request.getPayRate().getUnit()));
-        payRate.setValue(request.getPayRate().getValue());
-        // check/update all products that use this
-        // with the current setup, testing if not negative for fixed values is enough
-        // but maybe the dbs need to be changed and modified and additional changes need
-        // to be done here.
-    }
+        boolean updated = false;
 
-    private void updateDerivedProducts(ProductDefinition definition) {
-        // all products that are derived from the changed definition
-        List<Product> products = productRepository.findByProductDefinition(definition);
-
-        // just check if less than zero and adjust to zero
-        // need to change that later depending on how to handle this
-        // just throw an error?
-
-        // TODO: check if changed from fixed to percentage...so actually need to test
-        // both...
-        for (Product product : products) {
-            if (definition.getRateType() == RateType.FIXED) {
-                BigDecimal newRate = definition.getRate().add(product.getRate());
-                // new rate now smaller than zero.
-                if (newRate.compareTo(BigDecimal.ZERO) < 0) {
-                    // throw new IllegalArgumentException("Final rate can't be negative: " +
-                    // newRate);
-                    product.setRate(BigDecimal.ZERO);
-                }
-            }
-            // here else "percentage" - not needed at this moment
-            productRepository.save(product);
-
-            // Maybe I could use this, but probably needs rules how to handle changes
-            // productService.updateProductRate(product.getId(), product.getRate());
+        if (request.getRate() != null && !request.getRate().equals(existingDefinition.getRate())) {
+            existingDefinition.setRate(request.getRate());
+            updated = true;
         }
 
+        if (request.getPayRate() != null) {
+            PayRate payRate = existingDefinition.getPayRate();
+            if (request.getPayRate().getUnit() != null
+                    && !request.getPayRate().getUnit().equals(payRate.getUnit().name())) {
+                payRate.setUnit(PayRateUnit.valueOf(request.getPayRate().getUnit()));
+                updated = true;
+            }
+            if (request.getPayRate().getValue() != null
+                    && !request.getPayRate().getValue().equals(payRate.getValue())) {
+                payRate.setValue(request.getPayRate().getValue());
+                updated = true;
+            }
+        }
+
+        if (updated) {
+            productDefinitionRepository.save(existingDefinition);
+        }
     }
 
+    @Transactional
+    public void updateDerivedProducts(ProductDefinition definition, BigDecimal oldRate) {
+        List<Product> products = productRepository.findByProductDefinition(definition);
+
+        for (Product product : products) {
+            if (product.getRateType() != definition.getRateType()) {
+                resetProductRate(product, definition);
+                markProductForReview(product);
+            } else {
+                updateProductRate(product, definition, oldRate);
+            }
+
+            productRepository.save(product);
+        }
+    }
+
+    private void resetProductRate(Product product, ProductDefinition definition) {
+        product.setRateType(definition.getRateType());
+        product.setRate(definition.getRate());
+    }
+
+    private void updateProductRate(Product product, ProductDefinition definition, BigDecimal oldRate) {
+        BigDecimal newRate;
+        switch (definition.getRateType()) {
+            case FIXED:
+                newRate = calculateNewFixedRate(product, definition, oldRate);
+                break;
+            case PERCENTAGE:
+                newRate = calculateNewPercentageRate(product, definition, oldRate);
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown rate type: " + definition.getRateType());
+        }
+
+        product.setRate(newRate);
+    }
+
+    private BigDecimal calculateNewFixedRate(Product product, ProductDefinition definition, BigDecimal oldRate) {
+        BigDecimal rateModifier = product.getRate().subtract(oldRate);
+        BigDecimal newRate = definition.getRate().add(rateModifier);
+        return newRate.max(BigDecimal.ZERO);
+    }
+
+    private BigDecimal calculateNewPercentageRate(Product product, ProductDefinition definition, BigDecimal oldRate) {
+        BigDecimal productRate = product.getRate();
+        BigDecimal definitionRate = definition.getRate();
+        BigDecimal rateModifier = productRate.divide(oldRate, 4, RoundingMode.HALF_EVEN).subtract(BigDecimal.ONE);
+        BigDecimal newRate = definitionRate.multiply(rateModifier.add(BigDecimal.ONE));
+        return newRate;
+    }
+
+    private void markProductForReview(Product product) {
+
+    }
 }

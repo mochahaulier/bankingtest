@@ -21,10 +21,9 @@ import lombok.RequiredArgsConstructor;
 public class ClientProductService {
 
     private final ClientProductRepository clientProductRepository;
-
     private final ClientRepository clientRepository;
-
     private final ProductRepository productRepository;
+    private final TransactionService transactionService;
 
     @Transactional
     public ClientProduct createClientProduct(ClientProductRequest request) {
@@ -40,7 +39,7 @@ public class ClientProductService {
             case ACCOUNT:
                 AccountProduct accountProduct = new AccountProduct();
                 accountProduct.setStartDate(request.getStartDate());
-                accountProduct.setAccountBalance(request.getInitialBalance());
+                // accountProduct.setAccountBalance(request.getInitialBalance());
                 clientProduct = accountProduct;
                 break;
             case LOAN:
@@ -60,7 +59,14 @@ public class ClientProductService {
         clientProduct.setType(product.getProductType());
         clientProduct.setLastChargeDate(request.getStartDate());
 
-        return clientProductRepository.save(clientProduct);
+        clientProduct = clientProductRepository.save(clientProduct);
+
+        if (clientProduct instanceof AccountProduct) {
+            AccountProduct accountProduct = (AccountProduct) clientProduct;
+            transactionService.processAccountDeposit(accountProduct, request.getInitialBalance());
+        }
+
+        return clientProduct;
     }
 
     @Transactional(readOnly = true)

@@ -33,5 +33,4 @@ public class AccountProduct extends ClientProduct {
     public void setStartDate(LocalDate startDate) {
         this.startDate = startDate;
     }
-
 }

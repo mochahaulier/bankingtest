@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/fee-evaluation")
+@RequestMapping("/api/v1/fee-evaluation")
 public class FeeEvaluationController {
 
     private final FeeEvaluationService feeEvaluationService;

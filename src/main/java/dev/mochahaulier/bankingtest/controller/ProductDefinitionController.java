@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/product-definitions")
+@RequestMapping("/api/v1/product-definitions")
 @Validated
 public class ProductDefinitionController {
 
