@@ -4,7 +4,7 @@ Using Spring, PostgreSQL, Hibernate, Maven. Postman used for API testing.
 
 ## Entity-Relationship Diagram (ERD) - generated in pgAdmin
 
-![Database ERD](TableERD.pgerd.png)
+![Database ERD](TableERD.pgerd.NEW.png)
 
 ## API Documentation (selected endpoints)
 
