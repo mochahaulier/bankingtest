@@ -6,6 +6,7 @@ import dev.mochahaulier.bankingtest.model.Client;
 import dev.mochahaulier.bankingtest.model.ClientProduct;
 import dev.mochahaulier.bankingtest.model.LoanProduct;
 import dev.mochahaulier.bankingtest.model.Product;
+import dev.mochahaulier.bankingtest.repository.AccountProductRepository;
 import dev.mochahaulier.bankingtest.repository.ClientProductRepository;
 import dev.mochahaulier.bankingtest.repository.ClientRepository;
 import dev.mochahaulier.bankingtest.repository.ProductRepository;
@@ -24,6 +25,7 @@ public class ClientProductService {
     private final ClientRepository clientRepository;
     private final ProductRepository productRepository;
     private final TransactionService transactionService;
+    private final AccountProductRepository accountProductRepository;
 
     @Transactional
     public ClientProduct createClientProduct(ClientProductRequest request) {
@@ -77,5 +79,13 @@ public class ClientProductService {
     @Transactional(readOnly = true)
     public List<ClientProduct> getClientProductsByClientId(Long clientId) {
         return clientProductRepository.findByClientId(clientId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AccountProduct> getClientAccounts(Long clientId) {
+        Client client = clientRepository.findById(clientId)
+                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+
+        return accountProductRepository.findByClient(client);
     }
 }

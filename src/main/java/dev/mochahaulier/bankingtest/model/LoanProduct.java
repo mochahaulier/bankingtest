@@ -2,9 +2,6 @@ package dev.mochahaulier.bankingtest.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Objects;
-
-import org.hibernate.proxy.HibernateProxy;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;

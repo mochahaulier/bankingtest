@@ -22,17 +22,19 @@ public class FeeCalculationService {
 
         // for RateType fixed the fee is just the rate
         if (productDefinition.getRateType() == RateType.FIXED) {
-            return productDefinition.getRate().add(clientProduct.getRate());
+            // return productDefinition.getRate().add(clientProduct.getRate());
+            return clientProduct.getRate();
         }
 
         // for percentage fixed the fee is just the rate
         if (productDefinition.getRateType() == RateType.PERCENTAGE) {
             // The main rate from the definition
-            BigDecimal ratePD = productDefinition.getRate();
+            // BigDecimal ratePD = productDefinition.getRate();
             // The custom clientproduct rate.
-            BigDecimal rateCP = clientProduct.getRate();
+            // BigDecimal rateCP = clientProduct.getRate();
             // The final rate: PD * (1 + CP)
-            BigDecimal rate = ratePD.multiply(rateCP.add(BigDecimal.ONE));
+            // BigDecimal rate = ratePD.multiply(rateCP.add(BigDecimal.ONE));
+            BigDecimal rate = clientProduct.getRate();
             if (productDefinition.getProductType() == ProductType.ACCOUNT) {
                 AccountProduct accountProduct = (AccountProduct) clientProduct;
                 return accountProduct.getAccountBalance().multiply(rate);

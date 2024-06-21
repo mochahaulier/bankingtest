@@ -8,6 +8,7 @@ import dev.mochahaulier.bankingtest.model.ClientProduct;
 import dev.mochahaulier.bankingtest.model.ProductType;
 import dev.mochahaulier.bankingtest.model.Transaction;
 import dev.mochahaulier.bankingtest.model.TransactionType;
+import dev.mochahaulier.bankingtest.repository.AccountProductRepository;
 import dev.mochahaulier.bankingtest.repository.ClientProductRepository;
 import dev.mochahaulier.bankingtest.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,20 +25,24 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final ClientProductRepository clientProductRepository;
+    private final AccountProductRepository accountProductRepository;
 
     @Transactional
     public void processFeeDeduction(ClientProduct clientProduct, BigDecimal fee) {
-        List<AccountProduct> clientAccounts = clientProductRepository
-                .findByClientAndProduct_ProductDefinition_ProductType(clientProduct.getClient(), ProductType.ACCOUNT)
-                .stream()
-                .map(AccountProduct.class::cast)
-                .collect(Collectors.toList());
+        List<AccountProduct> clientAccounts = accountProductRepository.findByClient(clientProduct.getClient());
+
+        // List<AccountProduct> clientAccounts = clientProductRepository
+        // .findByClientAndProduct_ProductDefinition_ProductType(clientProduct.getClient(),
+        // ProductType.ACCOUNT)
+        // .stream()
+        // .map(AccountProduct.class::cast)
+        // .collect(Collectors.toList());
 
         if (clientAccounts.isEmpty()) {
             throw new IllegalStateException("No account found for client " + clientProduct.getClient().getId());
         }
 
-        // Select account with smallest ID
+        // Select account with smallest ID, maybe let client choose which account to use
         AccountProduct account = clientAccounts.stream()
                 .min(Comparator.comparing(ClientProduct::getId))
                 .orElseThrow(() -> new RuntimeException("No account found."));

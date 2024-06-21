@@ -11,16 +11,19 @@ import java.util.List;
 import dev.mochahaulier.bankingtest.model.Operation;
 import dev.mochahaulier.bankingtest.validation.ValidationGroup;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class ProductDefinitionRequest {
         @Valid
         @NotNull(message = "Definitions list cannot be null.")
         private List<DefinitionRequest> definitions;
 
-        @Data
+        @Getter
+        @Setter
         public static class DefinitionRequest {
                 @NotNull(message = "Operation is required.")
                 // @Pattern(regexp = "^[NU]$", message = "Operation must be 'N' or 'U'.")
@@ -43,10 +46,10 @@ public class ProductDefinitionRequest {
                                 ValidationGroup.NewOperation.class, ValidationGroup.UpdateOperation.class })
                 private BigDecimal rate;
                 @NotNull(message = "Pay rate unit is required.", groups = ValidationGroup.NewOperation.class)
-                // @Valid
                 private PayRateDto payRate;
 
-                @Data
+                @Getter
+                @Setter
                 @AllArgsConstructor
                 @RequiredArgsConstructor
                 public static class PayRateDto {

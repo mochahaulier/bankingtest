@@ -1,13 +1,15 @@
 package dev.mochahaulier.bankingtest.controller;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
 
+import dev.mochahaulier.bankingtest.dto.ProductCreationRequest;
+import dev.mochahaulier.bankingtest.dto.ProductUpdateRequest;
 import dev.mochahaulier.bankingtest.model.Product;
 import dev.mochahaulier.bankingtest.service.ProductService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.web.bind.annotation.*;
@@ -20,8 +22,8 @@ public class ProductController {
     private final ProductService productService;
 
     @PostMapping
-    public Product createProduct(@RequestParam String productKey, @RequestParam BigDecimal customRate) {
-        return productService.createProduct(productKey, customRate);
+    public Product createProduct(@RequestBody @Valid ProductCreationRequest productRequest) {
+        return productService.createProduct(productRequest);
     }
 
     @GetMapping
@@ -35,8 +37,8 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
-    public Product updateProductRate(@PathVariable Long id, @RequestParam BigDecimal newRate) {
-        return productService.updateProductRate(id, newRate);
+    public Product updateProductRate(@RequestBody @Valid ProductUpdateRequest productRequest) {
+        return productService.updateProductRate(productRequest);
     }
 
     @GetMapping("/by-definition/{definitionId}")

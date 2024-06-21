@@ -1,12 +1,13 @@
 package dev.mochahaulier.bankingtest.dto;
 
-import lombok.Data;
-
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Data
+@Getter
+@Setter
 public class ClientProductRequest {
 
     @NotNull

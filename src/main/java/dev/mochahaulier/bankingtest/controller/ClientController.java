@@ -1,7 +1,9 @@
 package dev.mochahaulier.bankingtest.controller;
 
+import dev.mochahaulier.bankingtest.dto.ClientRequest;
 import dev.mochahaulier.bankingtest.model.Client;
 import dev.mochahaulier.bankingtest.service.ClientService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
@@ -33,21 +35,13 @@ public class ClientController {
     }
 
     @PostMapping
-    public Client createClient(@RequestBody Client client) {
-        return clientService.saveClient(client);
+    public Client createClient(@RequestBody @Valid ClientRequest clientRequest) {
+        return clientService.saveClient(clientRequest);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Client> updateClient(@PathVariable Long id, @RequestBody Client clientDetails) {
-        Optional<Client> clientOptional = clientService.getClientById(id);
-        if (clientOptional.isPresent()) {
-            Client client = clientOptional.get();
-            client.setName(clientDetails.getName());
-            client.setEmail(clientDetails.getEmail());
-            return ResponseEntity.ok(clientService.saveClient(client));
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<Client> updateClient(@PathVariable Long id, @RequestBody ClientRequest clientRequest) {
+        return clientService.updateClient(id, clientRequest);
     }
 
     @DeleteMapping("/{id}")

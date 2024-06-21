@@ -1,5 +1,7 @@
 package dev.mochahaulier.bankingtest.service;
 
+import dev.mochahaulier.bankingtest.dto.ProductCreationRequest;
+import dev.mochahaulier.bankingtest.dto.ProductUpdateRequest;
 import dev.mochahaulier.bankingtest.model.Product;
 import dev.mochahaulier.bankingtest.model.ProductDefinition;
 import dev.mochahaulier.bankingtest.repository.ProductDefinitionRepository;
@@ -24,10 +26,12 @@ public class ProductService {
     private final ProductDefinitionRepository productDefinitionRepository;
 
     @Transactional
-    public Product createProduct(String productKey, BigDecimal customRate) {
-        ProductDefinition productDefinition = productDefinitionRepository.findById(productKey)
+    public Product createProduct(ProductCreationRequest productRequest) {
+        ProductDefinition productDefinition = productDefinitionRepository
+                .findById(productRequest.getProductDefinitionKey())
                 .orElseThrow(() -> new IllegalArgumentException("Product definition not found"));
 
+        BigDecimal customRate = productRequest.getAdjustedRate();
         validateCustomRate(productDefinition, customRate);
 
         Product product = new Product();
@@ -50,10 +54,11 @@ public class ProductService {
     }
 
     @Transactional
-    public Product updateProductRate(Long id, BigDecimal newRate) {
-        Product product = productRepository.findById(id)
+    public Product updateProductRate(ProductUpdateRequest productRequest) {
+        Product product = productRepository.findById(productRequest.getProductDefinitionKey())
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
 
+        BigDecimal newRate = productRequest.getAdjustedRate();
         validateCustomRate(product.getProductDefinition(), newRate);
 
         product.setRate(newRate);

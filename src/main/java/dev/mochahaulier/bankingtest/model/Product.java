@@ -42,7 +42,7 @@ public class Product {
     @Enumerated(EnumType.STRING)
     private RateType rateType;
 
-    @Column(scale = 38, precision = 4)
+    @Column(scale = 5, precision = 38)
     private BigDecimal rate;
 
     @Override

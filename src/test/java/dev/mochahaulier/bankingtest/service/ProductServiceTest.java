@@ -1,11 +1,11 @@
 package dev.mochahaulier.bankingtest.service;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -17,6 +17,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import dev.mochahaulier.bankingtest.dto.ProductCreationRequest;
+import dev.mochahaulier.bankingtest.dto.ProductUpdateRequest;
 import dev.mochahaulier.bankingtest.model.Product;
 import dev.mochahaulier.bankingtest.model.ProductDefinition;
 import dev.mochahaulier.bankingtest.repository.ProductDefinitionRepository;
@@ -42,11 +44,15 @@ public class ProductServiceTest {
         ProductDefinition productDefinition = new ProductDefinition();
         productDefinition.setRate(BigDecimal.valueOf(20));
 
+        ProductCreationRequest productRequest = new ProductCreationRequest();
+        productRequest.setProductDefinitionKey(productKey);
+        productRequest.setAdjustedRate(customRate);
+
         when(productDefinitionRepository.findById(productKey)).thenReturn(Optional.of(productDefinition));
         when(productRepository.save(any(Product.class))).thenAnswer(i -> i.getArgument(0));
 
         // Act
-        Product product = productService.createProduct(productKey, customRate);
+        Product product = productService.createProduct(productRequest);
 
         // Assert
         assertEquals(productDefinition, product.getProductDefinition());
@@ -62,47 +68,60 @@ public class ProductServiceTest {
         ProductDefinition productDefinition = new ProductDefinition();
         productDefinition.setRate(BigDecimal.valueOf(20));
 
+        ProductCreationRequest productRequest = new ProductCreationRequest();
+        productRequest.setProductDefinitionKey(productKey);
+        productRequest.setAdjustedRate(invalidRate);
+
         when(productDefinitionRepository.findById(productKey)).thenReturn(Optional.of(productDefinition));
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            productService.createProduct(productKey, invalidRate);
+            productService.createProduct(productRequest);
         });
-        assertEquals("Final rate can't be negative: -1(-21)", exception.getMessage());
+        assertEquals("Final rate can't be negative: -21",
+                exception.getMessage());
     }
 
     @Test
     void testCreateProduct_InvalidFixedRate() {
         // Arrange
         String productKey = "CL48S5";
-        BigDecimal invalidRate = BigDecimal.valueOf(251);
+        BigDecimal invalidRate = BigDecimal.valueOf(271);
         ProductDefinition productDefinition = new ProductDefinition();
         productDefinition.setRate(BigDecimal.valueOf(20));
+
+        ProductCreationRequest productRequest = new ProductCreationRequest();
+        productRequest.setProductDefinitionKey(productKey);
+        productRequest.setAdjustedRate(invalidRate);
 
         when(productDefinitionRepository.findById(productKey)).thenReturn(Optional.of(productDefinition));
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            productService.createProduct(productKey, invalidRate);
+            productService.createProduct(productRequest);
         });
-        assertEquals("Custom rate out of allowed range +-250",
-                exception.getMessage());
+        assertEquals("Custom rate out of allowed difference +-250",
 
+                exception.getMessage());
     }
 
     @Test
     void testCreateProduct_InvalidPercentageRate() {
         // Arrange
         String productKey = "CL48S5";
-        BigDecimal invalidRate = BigDecimal.valueOf(0.21);
+        BigDecimal invalidRate = BigDecimal.valueOf(0.13);
         ProductDefinition productDefinition = new ProductDefinition();
         productDefinition.setRate(BigDecimal.valueOf(0.1));
+
+        ProductCreationRequest productRequest = new ProductCreationRequest();
+        productRequest.setProductDefinitionKey(productKey);
+        productRequest.setAdjustedRate(invalidRate);
 
         when(productDefinitionRepository.findById(productKey)).thenReturn(Optional.of(productDefinition));
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            productService.createProduct(productKey, invalidRate);
+            productService.createProduct(productRequest);
         });
         assertEquals("Custom rate out of allowed range +-0.2",
                 exception.getMessage());
@@ -114,10 +133,14 @@ public class ProductServiceTest {
         String productKey = "CL48S5";
         BigDecimal customRate = BigDecimal.valueOf(10);
 
+        ProductCreationRequest productRequest = new ProductCreationRequest();
+        productRequest.setProductDefinitionKey(productKey);
+        productRequest.setAdjustedRate(customRate);
+
         when(productDefinitionRepository.findById(productKey)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> productService.createProduct(productKey, customRate));
+        assertThrows(IllegalArgumentException.class, () -> productService.createProduct(productRequest));
     }
 
     @Test
@@ -204,11 +227,16 @@ public class ProductServiceTest {
 
         Product product = new Product();
         product.setProductDefinition(productDefinition);
+
+        ProductUpdateRequest productRequest = new ProductUpdateRequest();
+        productRequest.setProductDefinitionKey(productId);
+        productRequest.setAdjustedRate(newRate);
+
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
         when(productRepository.save(any(Product.class))).thenAnswer(i -> i.getArgument(0));
 
         // Act
-        Product updatedProduct = productService.updateProductRate(productId, newRate);
+        Product updatedProduct = productService.updateProductRate(productRequest);
 
         // Assert
         assertEquals(newRate, updatedProduct.getRate());
@@ -219,19 +247,26 @@ public class ProductServiceTest {
     void testUpdateProductRate_InvalidRate() {
         // Arrange
         Long productId = 1L;
-        BigDecimal invalidRate = BigDecimal.valueOf(251);
+        BigDecimal invalidRate = BigDecimal.valueOf(271);
         ProductDefinition productDefinition = new ProductDefinition();
         productDefinition.setRate(BigDecimal.valueOf(20));
 
         Product product = new Product();
         product.setProductDefinition(productDefinition);
+
+        ProductUpdateRequest productRequest = new ProductUpdateRequest();
+        productRequest.setProductDefinitionKey(productId);
+        productRequest.setAdjustedRate(invalidRate);
+
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            productService.updateProductRate(productId, invalidRate);
+            productService.updateProductRate(productRequest);
         });
-        assertEquals("Custom rate out of allowed range +-250", exception.getMessage());
+        assertEquals("Custom rate out of allowed difference +-250",
+
+                exception.getMessage());
     }
 
     @Test
@@ -244,13 +279,20 @@ public class ProductServiceTest {
 
         Product product = new Product();
         product.setProductDefinition(productDefinition);
+
+        ProductUpdateRequest productRequest = new ProductUpdateRequest();
+        productRequest.setProductDefinitionKey(productId);
+        productRequest.setAdjustedRate(invalidRate);
+
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            productService.updateProductRate(productId, invalidRate);
+            productService.updateProductRate(productRequest);
         });
-        assertEquals("Final rate can't be negative: -1(-21)", exception.getMessage());
+        assertEquals("Final rate can't be negative: -21",
+
+                exception.getMessage());
     }
 
     @Test
@@ -259,9 +301,13 @@ public class ProductServiceTest {
         Long productId = 1L;
         BigDecimal newRate = BigDecimal.valueOf(30);
 
+        ProductUpdateRequest productRequest = new ProductUpdateRequest();
+        productRequest.setProductDefinitionKey(productId);
+        productRequest.setAdjustedRate(newRate);
+
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> productService.updateProductRate(productId, newRate));
+        assertThrows(IllegalArgumentException.class, () -> productService.updateProductRate(productRequest));
     }
 }
